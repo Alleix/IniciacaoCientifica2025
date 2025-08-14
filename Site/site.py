@@ -3,6 +3,8 @@ from dash import html, dcc, Dash, Input, Output,callback
 from dash.dependencies import Input, Output
 import CriarMapaFolium 
 import pandas as pd
+import plotly.express as px
+from assets.criarGraficoBarra import criarGraficoBarras
 
 
 # %%
@@ -18,11 +20,11 @@ pd.set_option('display.max_colwidth', None)
 app = Dash(__name__)
 
 sexo = {'1':'Homem','2':'Mulher','9':'Sem resposta'}
-idade = {'1':'Menos de 13 anos','2':'13 a 15 anos','3':'16 ou 17 anos','4':'18 anos ou mais','9':'Sem resposta'}
-nascimento = {'-2':'Abandono de questionário','2000':'Antes de 2001','2001':'2001','2002':'2002','2003':'2003','2004':'2004','2005':'2005','2006':'2006','2007':'2007','2008':'2008 ou mais','9999':'Sem resposta'}
-corRaca = {'-2':'Abandono de questionário','1':'Branca','2':'Preta','3':'Amarela','4':'Parda','5':'Indígena','9':'Sem resposta'}
-anoEscolar = {'-2':'Abandono de questionário','1':'6º ano do Ensino Fundamental','2':'7º ano do Ensino Fundamental','3':'8º ano do Ensino Fundamental','4':'9º ano do Ensino Fundamental','5':'1º ano do Ensino Médio','6':'2º ano do Ensino Médio','7':'3º ano do Ensino Médio','8':'Sem resposta'}
-pessoasPorCasa = {'-2':'Abandono de questionário','1':'1 pessoa (moro sozinho)','2':'2 pessoas','3':'3 pessoas','4':'4 pessoas','5':'5 pessoas','6':'6 pessoas','7':'7 pessoas','8':'8 pessoas','9':'9 pessoas','10':'10 pessoas ou mais','99':'Sem resposta'}
+idade = {'1':'Menos de 13 anos','2':'13 a 15 anos','3':'16 ou 17 anos','4':'18 anos ou mais'}
+nascimento = {'2000':'Antes de 2001','2001':'2001','2002':'2002','2003':'2003','2004':'2004','2005':'2005','2006':'2006','2007':'2007','2008':'2008 ou mais'}
+corRaca = {'1':'Branca','2':'Preta','3':'Amarela','4':'Parda','5':'Indígena'}
+anoEscolar = {'1':'6º ano','2':'7º ano','3':'8º ano','4':'9º ano','5':'1º ano do EM','6':'2º ano do EM','7':'3º ano do EM'}
+pessoasPorCasa = {'1':'1 pessoa (moro sozinho)','2':'2','3':'3','4':'4','5':'5','6':'6','7':'7','8':'8','9':'9','10':'10 ou mais'}
 esferaAdministrativa = {'1':'Federal','2':'Estadual','3':'Municipal','4':'Privada'}
 
 
@@ -242,48 +244,73 @@ codCap = [4314902,4205407,4106902,3550308,3106200,3304557,3205309,5002704,520870
 app.layout = html.Div(className='telaMapa',children=[
     # Div principal com display flex para colocar os dropdowns e o mapa lado a lado
         # Coluna dos Dropdowns
-    
-    html.Div(className='filtros',children=[
-        html.H1('Filtros'),    
-        html.Div(className='dropdown',children=[
+
+    html.Div(className='graficoMapa',children=[
+        html.Div(className='filtros',children=[  
+            html.Div(className='dropdown',children=[
+                html.H1('Filtros'),  
+                
+                    # Dropdowns ocupando 100% da largura da coluna (que já está em 40%)
+                dcc.Dropdown(sexo, placeholder='Sexo',id='sexo',multi=True),
+                dcc.Dropdown(idade, placeholder='Idade',id='idade',multi=True),
+                dcc.Dropdown(nascimento, placeholder='Data de Nascimento',id='nascimento',multi=True),
+                dcc.Dropdown(corRaca, placeholder='Cor ou Raça',id='corRaca',multi=True),
+                dcc.Dropdown(anoEscolar, placeholder='Ano na Escola',id='anoEscolar',multi=True),
+                dcc.Dropdown(pessoasPorCasa, placeholder='Pessoas na casa',id='pessoasPorCasa',multi=True),
+                dcc.Dropdown(esferaAdministrativa, placeholder='Esfera Administrativa',id='esferaAdministrativa',multi=True)
+            ]),
             
-                # Dropdowns ocupando 100% da largura da coluna (que já está em 40%)
-            dcc.Dropdown(sexo, placeholder='Sexo',id='sexo', style={'width': '100%', 'height': '40px', 'font-size': '16px', 'margin-bottom': '10px'},multi=True),
-            dcc.Dropdown(idade, placeholder='Idade',id='idade', style={'width': '100%', 'height': '40px', 'font-size': '16px', 'margin-bottom': '10px'},multi=True),
-            dcc.Dropdown(nascimento, placeholder='Data de Nascimento',id='nascimento', style={'width': '100%', 'height': '40px', 'font-size': '16px', 'margin-bottom': '10px'},multi=True),
-            dcc.Dropdown(corRaca, placeholder='Cor ou Raça',id='corRaca', style={'width': '100%', 'height': '40px', 'font-size': '16px', 'margin-bottom': '10px'},multi=True),
-            dcc.Dropdown(anoEscolar, placeholder='Ano na Escola',id='anoEscolar', style={'width': '100%', 'height': '40px', 'font-size': '16px', 'margin-bottom': '10px'},multi=True),
-            dcc.Dropdown(pessoasPorCasa, placeholder='Pessoas na casa',id='pessoasPorCasa', style={'width': '100%', 'height': '40px', 'font-size': '16px', 'margin-bottom': '10px'},multi=True),
-            dcc.Dropdown(esferaAdministrativa, placeholder='Esfera Administrativa',id='esferaAdministrativa', style={'width': '100%', 'height': '40px', 'font-size': '16px', 'margin-bottom': '10px'},multi=True)
-        ]),
-        
-                    
-        html.Div(children=[
-            html.H1('Escolha o dado'),
-            html.Div(children=[
+                        
+                
+            html.Div(className='escolhaDado',children=[
+                html.H1('Escolha o dado'),
                 dcc.Dropdown(
                     dados, placeholder='Dados', id='selecionarDado', 
-                    style={'width': '100%', 'height': '40px', 'font-size': '16px', 'margin-bottom': '10px'},
-                    value = dados[0]
-                )
-            ])
-        ]),
                 
-        html.Div(className='checkbox',children=[
-            dcc.RadioItems(
-                id='radioItems',
-                inline=False,
-                value = 'B02019A'
-            )      
+                    value = dados[0]
+                ),
+            
+                    
+                html.Div(className='checkbox',children=[
+                    dcc.RadioItems(
+                        id='radioItems',
+                        inline=False,
+                        value = 'B02019A'
+                    )      
+                ]),
+            ]),
         ]),
-    ]),
 
-    
-        # Coluna do Mapa
-    html.Div(className= 'mapa',children=[
-        html.Iframe(id='map', srcDoc=open('assets/mapabr.html', 'r').read(), width='100%', height='100%')
-    ], style={'width': '65%','heigth':'100vh'})  # Ajuste a largura da coluna do mapa para 60%
-], style={'display': 'flex'})  # Flex container para organizar as colunas lado a lado
+        
+            # Coluna do Mapa
+
+    ]),  # Flex container para organizar as colunas lado a lado
+
+    html.Div(className= 'graficos',children=[
+
+        html.Div(className= 'mapa',children=[
+            html.Iframe(id='map', srcDoc=open('assets/mapabr.html', 'r').read(), width='100%', height='100%')
+        ]),  # Ajuste a largura da coluna do mapa para 60%
+
+
+        html.Div(className='graficosBarra',children=[
+            html.Div(className='graficoBarraSimples',children=[           
+            dcc.Graph(
+                id='graficoBarra',
+                figure=criarGraficoBarras([],[], "Gráfico de Barras", "Eixo X", "Eixo Y"),
+            ),
+            ]),
+            html.Div(className='graficoBarraEmpilhada',children=[
+            dcc.Graph(
+                id='graficoBarraEmpilhado',
+                figure=criarGraficoBarras([],[], "Gráfico de Barras Empilhado", "Eixo X", "Eixo Y"),
+                #O GRAFICO DOS SEXOS NAO POSSUI FILTROS É APENAS O SEXO
+            ),
+            ]), 
+        ])
+    ])
+])
+
 
 dfPerguntas = pd.read_csv('assets/codigoPerguntas.csv')
 #filtro_estado = dfPerguntas[(dfPerguntas['MUNICIPIO_CAP'] == 0)]
@@ -300,23 +327,19 @@ dfPerguntas['B02019A']
 
 @app.callback(
     Output('radioItems', 'options'),
-    Input('selecionarDado','value')
+    Input('selecionarDado', 'value')
 )
 def radioItems_update(dadoSelecionado):
-    if dadoSelecionado == dados[0]:
-        return alimentacao_checklist
-    if dadoSelecionado == dados[1]:
-        return atividade_checklist
-    if dadoSelecionado == dados[2]:
-        return situacoesCasaEscola_checklist
-    if dadoSelecionado == dados[3]:
-        return saudeMental_checklist
-    if dadoSelecionado == dados[4]:
-        return saudeReprodutiva_checklist
-    if dadoSelecionado == dados[5]:
-        return higiene_checklist
-    if dadoSelecionado == dados[6]:
-        return usoSaude_checklist
+    mapping = {
+        dados[0]: alimentacao_checklist,
+        dados[1]: atividade_checklist,
+        dados[2]: situacoesCasaEscola_checklist,
+        dados[3]: saudeMental_checklist,
+        dados[4]: saudeReprodutiva_checklist,
+        dados[5]: higiene_checklist,
+        dados[6]: usoSaude_checklist
+    }
+    return mapping.get(dadoSelecionado, [])
     
 
 # %%
@@ -326,81 +349,118 @@ def radioItems_update(dadoSelecionado):
 
 
 @app.callback(
-    Output('map', 'srcDoc'),
+    [Output('map', 'srcDoc'),
+     Output('graficoBarra', 'figure')],
+     Output('graficoBarraEmpilhado', 'figure'),
     [Input('radioItems', 'value'),
-    Input('sexo', 'value'),
-    Input('idade', 'value'),
-    Input('nascimento', 'value'),
-    Input('corRaca', 'value'),
-    Input('anoEscolar', 'value'),
-    Input('pessoasPorCasa', 'value'),
-    Input('esferaAdministrativa','value')],
+     Input('sexo', 'value'),
+     Input('idade', 'value'),
+     Input('nascimento', 'value'),
+     Input('corRaca', 'value'),
+     Input('anoEscolar', 'value'),
+     Input('pessoasPorCasa', 'value'),
+     Input('esferaAdministrativa', 'value')],
     prevent_initial_call=True
 )
-def mapUpdate(perguntaSelecionada,sexo,idade,nascimento,corRaca,anoEscolar,pessoasPorCasa,esferaAdministrativa):
-
-    Inputs = [sexo,idade,nascimento,corRaca,anoEscolar,pessoasPorCasa,esferaAdministrativa]
-    codigos = ['B01001A','B01003','B01005','B01002','B01021A','B01010A','ESFERA']
+def mapUpdate(perguntaSelecionada, sexo, idade, nascimento, corRaca, anoEscolar, pessoasPorCasa, esferaAdministrativa):
 
     if perguntaSelecionada is None:
-        return open('mapa.html', 'r').read()
-    
-    dfPerguntas = pd.read_csv('assets/codigoPerguntas.csv')
-    df_filtrado = pd.DataFrame()
+        return open('mapa.html').read(), graficoBarras([], [], 'Gráfico de Barras', 'Estados', 'Taxa')
 
-    
-    taxa = pd.DataFrame({'estados': listSglEstados})
-    dadoEstados = pd.DataFrame(columns=['taxa'])
+    # Carrega os dados brutos
 
-    for i in range(len(Inputs)):
-            if Inputs[i] is not None:
-                for j in range(len(Inputs[i])):
-                    df_filtrado =  pd.concat([df_filtrado,dfPerguntas[dfPerguntas[codigos[i]] == int(Inputs[i][j])]], ignore_index=True)
+    dfOriginal = pd.read_csv('assets/codigoPerguntas.csv')
+    df = dfOriginal
 
-    
+    # Filtros e seus respectivos códigos
+    filtros = [sexo, idade, nascimento, corRaca, anoEscolar, pessoasPorCasa, esferaAdministrativa]
+    codigos = ['B01001A', 'B01003', 'B01005', 'B01002', 'B01021A', 'B01010A', 'ESFERA']
 
-    for i in UF:
-        # Filtrando as linhas para o estado específico e para `MUNICIPIO_CAP == 0`
-        filtro_estado = df_filtrado[(df_filtrado['MUNICIPIO_CAP'] == 0) & (df_filtrado['UF'] == i)]
-        
-        # Calculando a média da coluna representada por `perguntaSelecionada`
-        media = filtro_estado[perguntaSelecionada].mean()
+    # Aplica todos os filtros disponíveis usando .isin()
+    for i, valores in enumerate(filtros):
+        if valores:  # se o filtro foi usado
+            df = df[df[codigos[i]].isin([int(v) for v in valores])]
 
-        # Adicionando a média calculada no DataFrame `dadoEstados`
-        dadoEstados.loc[len(dadoEstados)] = [media]
+    # Se o filtro removeu tudo, evita erro e retorna saída vazia
+    if df.empty:
+        taxa_vazia = pd.DataFrame({'estados': listSglEstados, 'taxa': [0] * len(listSglEstados)})
+        CriarMapaFolium.criarMapa('assets/BR2', taxa_vazia, perguntasResumidas[perguntaSelecionada])
+        return open('mapa.html').read(), graficoBarras([], [], 'Sem dados após filtragem', 'Estados', 'Taxa')
 
+    # DataFrames para médias por estado e capital
+    dados_taxa = []
 
+    # Estados
+    for uf in UF:
+        media_estado = df[(df['MUNICIPIO_CAP'] == 0) & (df['UF'] == uf)][perguntaSelecionada].mean()
+        media_estado = 0 if pd.isna(media_estado) else media_estado
+        dados_taxa.append(media_estado)
 
-    
-    # Calculando a taxa média para cada capital e adicionando a `dadoEstados`
-    for i in codCap:
-        # Filtrando as linhas para cada capital específica
-        filtro_capital = df_filtrado[df_filtrado['MUNICIPIO_CAP'] == i]
-        
-        # Calculando a média da coluna representada por `perguntaSelecionada`
-        media = filtro_capital[perguntaSelecionada].mean()
-        
-        # Adicionando a média calculada no DataFrame `dadoEstados`
-        dadoEstados.loc[len(dadoEstados)] = [media]
+    # Capitais
+    for cap in codCap:
+        media_capital = df[df['MUNICIPIO_CAP'] == cap][perguntaSelecionada].mean()
+        media_capital = 0 if pd.isna(media_capital) else media_capital
+        dados_taxa.append(media_capital)
 
+    # DataFrame final para gráfico e mapa
+    taxa = pd.DataFrame({
+        'estados': listSglEstados,
+        'taxa': dados_taxa
+    })
 
+    # Segurança extra: evita NaN
+    taxa['taxa'] = pd.to_numeric(taxa['taxa'], errors='coerce').fillna(0)
 
-    # Adicionando a coluna 'taxa' ao DataFrame `taxa`
-    taxa['taxa'] = dadoEstados['taxa'].values
+    # Salva para exportar se necessário
+    taxa.to_csv('taxabr.csv', index=False)
 
-    taxa.to_csv('taxabr.csv',index=False)
-    # Chamando a função para criar o mapa
+    # Cria o mapa com base na pergunta
     CriarMapaFolium.criarMapa('assets/BR2', taxa, perguntasResumidas[perguntaSelecionada])
 
-    # Retornando o conteúdo HTML do mapa gerado
-    return open('mapa.html', 'r').read()
+    # Cria o gráfico de barras
+    graficoBarras = criarGraficoBarras(
+        taxa['estados'].tolist(),
+        taxa['taxa'].tolist(),
+        perguntasResumidas[perguntaSelecionada],
+        'Estados',
+        'Taxa'
+    )
 
+    df = dfOriginal
 
-# %%
+    grupos = []
+    if sexo:
+        grupos = [int(s) for s in sexo]
+
+    data = []
+    for uf in UF:
+        for grupo in grupos:
+            df_filtrado = df[(df['UF'] == uf) & (df['MUNICIPIO_CAP'] == 0) & (df['B01001A'] == grupo)]
+            media = df_filtrado[perguntaSelecionada].mean()
+            media = 0 if pd.isna(media) else media
+            data.append({
+                'Estado': uf,         # código numérico
+                'Sexo': grupo,        # 1 = masc, 2 = fem
+                'Taxa': media
+            })
+
+    df_stack = pd.DataFrame(data)
+    df_stack['Estado'] = df_stack['Estado'].map(dict(zip(UF, listSglEstados)))  # converte 41 → 'PR', etc.
+    df_stack['Sexo'] = df_stack['Sexo'].map({1: 'Masculino', 2: 'Feminino',9:'Sem Resposta'}) 
+
+    graficoBarraEmpilhado = px.bar(
+        df_stack,
+        x='Estado',
+        y='Taxa',
+        color='Sexo',
+        barmode='stack',
+        title=perguntasResumidas[perguntaSelecionada]
+        )
+    
+    graficoBarras.update_layout(height=380)
+    graficoBarraEmpilhado.update_layout(height=380)
+
+    return open('mapa.html').read(), graficoBarras, graficoBarraEmpilhado
+
 if __name__ == '__main__':
     app.run(debug=True)
-
-# %%
-
-
-
